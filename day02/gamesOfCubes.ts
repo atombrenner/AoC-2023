@@ -36,3 +36,13 @@ export const isGamePossible = (gamesCubes: CubeSet) => (game: GameResult) =>
 
 export const isDrawPossible = (gameCubes: CubeSet) => (draw: CubeSet) =>
   draw.red <= gameCubes.red && draw.green <= gameCubes.green && draw.blue <= gameCubes.blue
+
+export const getMinCubeSet = (draws: CubeSet[]) => {
+  return {
+    red: Math.max(...draws.map((draw) => draw.red)),
+    green: Math.max(...draws.map((draw) => draw.green)),
+    blue: Math.max(...draws.map((draw) => draw.blue)),
+  } as CubeSet
+}
+
+export const cubeSetPower = ({ red, green, blue }: CubeSet) => red * green * blue

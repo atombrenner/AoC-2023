@@ -1,5 +1,5 @@
 import { describe, it, test, expect } from 'bun:test'
-import { parseGameResults } from './gamesOfCubes'
+import { getMinCubeSet, parseGameResults } from './gamesOfCubes'
 
 const example = `Game 1: 3 blue, 4 red; 1 red, 2 green, 6 blue; 2 green
 Game 2: 1 blue, 2 green; 3 green, 4 blue, 1 red; 1 green, 1 blue
@@ -21,3 +21,12 @@ test('parseGameResults', () => {
 // describe('a game with 12 red 13 green and 14 blue cubes', () => {
 //   it('should have 12 red cubes', () => {
 // })
+
+test('getMinCubeSet', () => {
+  const results = parseGameResults(example)
+  expect(getMinCubeSet(results[0].draws)).toEqual({ red: 4, green: 2, blue: 6 })
+  expect(getMinCubeSet(results[1].draws)).toEqual({ red: 1, green: 3, blue: 4 })
+  expect(getMinCubeSet(results[2].draws)).toEqual({ red: 20, green: 13, blue: 6 })
+  expect(getMinCubeSet(results[3].draws)).toEqual({ red: 14, green: 3, blue: 15 })
+  expect(getMinCubeSet(results[4].draws)).toEqual({ red: 6, green: 3, blue: 2 })
+})
