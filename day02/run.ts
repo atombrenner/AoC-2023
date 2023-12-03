@@ -1,6 +1,6 @@
+import { sum } from '../utils/utils'
 import { readFileSync } from 'fs'
 import { cubeSetPower, getMinCubeSet, isGamePossible, parseGameResults } from './gamesOfCubes'
-import { sum } from '../utils/utils'
 
 const input = readFileSync('./day02/input.txt', 'utf-8')
 
