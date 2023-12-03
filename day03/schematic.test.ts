@@ -1,8 +1,12 @@
 import { test, expect } from 'bun:test'
 import {
+  getGearRatios,
+  getGears,
   getNumbersFromLine,
   getNumbersFromSchematic,
   getPartNumbers,
+  getStars,
+  isAdjacent,
   isAdjacentToSymbol,
 } from './schematic'
 import { parseLines, sum } from '../utils/utils'
@@ -54,8 +58,48 @@ test('isAdjacentToSymbol', () => {
 })
 
 test('getPartNumbers', () => {
-  const partNumbers = Array.from(getPartNumbers(example))
+  const partNumbers = Array.from(getPartNumbers(example)).map((p) => p.value)
 
   expect(partNumbers).toEqual([467, 35, 633, 617, 592, 755, 664, 598])
   expect(sum(partNumbers)).toBe(4361)
+})
+
+test('getStars', () => {
+  const results = Array.from(getStars(example))
+  expect(results).toEqual([
+    { x: 3, y: 1 },
+    { x: 3, y: 4 },
+    { x: 5, y: 8 },
+  ])
+})
+
+test.each([
+  [{ x: 5, y: 3, length: 1 }, false],
+  [{ x: 4, y: 4, length: 1 }, true],
+  [{ x: 6, y: 4, length: 1 }, true],
+  [{ x: 7, y: 4, length: 1 }, false], // one off
+  [{ x: 3, y: 5, length: 1 }, false], // one off
+  [{ x: 4, y: 5, length: 1 }, true],
+  [{ x: 6, y: 5, length: 1 }, true],
+  [{ x: 7, y: 5, length: 1 }, false], // one off
+  [{ x: 4, y: 5, length: 1 }, true],
+  [{ x: 6, y: 6, length: 1 }, true],
+  [{ x: 4, y: 6, length: 1 }, true],
+  [{ x: 5, y: 7, length: 1 }, false],
+])('is {x:5, y:5} adjacent to number %o should be %o', (number, expected) => {
+  const star = { x: 5, y: 5 }
+  expect(isAdjacent(star, { ...number, value: 0 })).toEqual(expected)
+})
+
+test('getGears', () => {
+  const gears = Array.from(getGears(example))
+  expect(gears).toEqual([
+    { x: 3, y: 1, numbers: [467, 35] },
+    { x: 5, y: 8, numbers: [755, 598] },
+  ])
+})
+
+test('getGearRatios', () => {
+  const ratios = Array.from(getGearRatios(example))
+  expect(ratios).toEqual([16345, 451490])
 })
