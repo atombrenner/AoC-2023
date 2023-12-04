@@ -1,4 +1,6 @@
-# advent2023
+# Advent of Code 2023
+
+My try at [Advent of Code 2023](https://https://adventofcode.com/2023) 🎄
 
 To install dependencies:
 
