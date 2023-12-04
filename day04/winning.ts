@@ -22,3 +22,14 @@ export const cardPoints = (card: Card): number => {
   const count = card.own.reduce((count, current) => (winning.has(current) ? count + 1 : count), 0)
   return count > 0 ? 2 ** (count - 1) : 0
 }
+
+export type MatchedCard = {
+  cardId: number
+  matches: number // count of matched winning numbers
+}
+
+export const matchedWinningNumbers = (card: Card): MatchedCard => {
+  const winning = new Set(card.winning)
+  const matches = card.own.reduce((count, current) => (winning.has(current) ? count + 1 : count), 0)
+  return { cardId: card.id, matches }
+}
