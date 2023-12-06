@@ -1,6 +1,6 @@
 import { parseLines, sum } from '../utils/utils'
 import { readFileSync } from 'fs'
-import { cardPoints, matchedWinningNumbers, parseCard, processCard } from './winning'
+import { cardPoints, matchedWinningNumbers, parseCard } from './winning'
 
 const input = readFileSync('./day04/input.txt', 'utf-8')
 const lines = parseLines(input)
