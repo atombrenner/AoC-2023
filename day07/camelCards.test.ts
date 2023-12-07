@@ -1,24 +1,16 @@
-import { describe, it, test, expect } from 'bun:test'
+import { test, expect } from 'bun:test'
 import {
   analyzeHand,
-  compareHands,
   fiveOfAKind,
   fourOfAKind,
   fullHouse,
   getHandType,
   highCard,
-  normalizeHand,
   onePair,
-  readHands,
   stringCompare,
   threeOfAKind,
   twoPair,
 } from './camelCards'
-
-test('normalizeCard', () => {
-  expect(normalizeHand('AATT8')).toEqual('EEAA8')
-  expect(normalizeHand('AKQJT')).toEqual('EDCBA')
-})
 
 test('analyzeHand', () => {
   expect(analyzeHand('AA887')).toEqual({ A: 2, '8': 2, '7': 1 })

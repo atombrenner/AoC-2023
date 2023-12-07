@@ -2,14 +2,12 @@
 // cards AKQJT98765432
 
 import { readFileSync } from 'fs'
-import { compareHands, readHands } from './camelCards'
+import { calcTotal, readHands, readHandsPart2 } from './camelCards'
 
 const input = readFileSync('./day07/input.txt', 'utf-8').trim()
+
 const hands = readHands(input)
+console.log('total winnings', calcTotal(hands))
 
-// now sort hands, so that the index + 1 equals the rank
-hands.sort(compareHands)
-
-const total = hands.reduce((sum, { bid }, index) => sum + bid * (index + 1), 0)
-
-console.log('total winnings', total)
+const hands2 = readHandsPart2(input)
+console.log('total winnings with jokers', calcTotal(hands2))
