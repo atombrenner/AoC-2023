@@ -13,7 +13,7 @@ type Node = {
 
 const parseNodeList = (lines: string[]) =>
   lines.slice(2).map((line) => {
-    const matches = Array.from(line.matchAll(/[A-Z]{3}/g))
+    const matches = Array.from(line.matchAll(/\w{3}/g))
     return { id: matches[0][0], left: matches[1][0], right: matches[2][0] }
   })
 
@@ -23,16 +23,19 @@ const nodeMap: Record<string, Node> = groupBy(parseNodeList(lines), (node) => no
 let step = 0
 let currentNode = 'AAA'
 while (currentNode !== 'ZZZ') {
-  switch (instructions[step % instructions.length]) {
-    case 'L':
-      currentNode = nodeMap[currentNode].left
-      break
-    case 'R':
-      currentNode = nodeMap[currentNode].right
-      break
-    default:
-      throw Error('unexpected instruction')
-  }
+  const instruction = instructions[step % instructions.length] === 'L' ? 'left' : 'right'
+  currentNode = nodeMap[currentNode][instruction]
   step += 1
 }
-console.log('steps needed', step)
+console.log('steps needed in part 1', step)
+
+step = 0
+let currentNodes = Object.keys(nodeMap).filter((id) => id.endsWith('A'))
+// this solutions runs forever, even it solved the example of part 2
+// while (!currentNodes.every((id) => id.endsWith('Z'))) {
+//   const instruction = instructions[step % instructions.length] === 'L' ? 'left' : 'right'
+//   currentNodes = currentNodes.map((id) => nodeMap[id][instruction])
+//   step += 1
+// }
+
+//console.log('steps needed in part 2', step)
