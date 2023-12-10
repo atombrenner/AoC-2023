@@ -20,6 +20,12 @@ const predictNext = (seq: number[]): number => {
   return prediction
 }
 
-// console.log(predictNext(sequences[0]))
+const predictPrev = (seq: number[]): number => {
+  if (seq.length <= 1) throw Error('unpredictable')
+  const prediction = isZeroSeq(seq) ? seq[0] : seq[0] - predictPrev(makeDiff(seq))
+  console.log(prediction + ' | ' + seq.join(' '))
+  return prediction
+}
 
 console.log('sum of all next values: ', sum(sequences.map(predictNext)))
+console.log('sum of all prev values: ', sum(sequences.map(predictPrev)))
