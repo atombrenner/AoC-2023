@@ -12,22 +12,22 @@ const rows = lines.map((line) => {
   return { springs, damaged: groups.split(',').map(Number) }
 })
 
-const cache: Record<string, number> = {}
-
 const findArrangements = (row: Row): number => {
-  const find = (springs: string, damaged: number[], groupCount: number): number => {
+  const cache: Record<string, number> = {}
+
+  const find = (springs: string, damaged: number[], matchCount: number): number => {
     if (springs.length === 0) {
-      return damaged.length === 0 && groupCount === 0 ? 1 : 0
+      return damaged.length === 0 && matchCount === 0 ? 1 : 0
     }
-    const key = [springs, damaged.join(','), groupCount].join(',')
+    const key = [springs, damaged.join(','), matchCount].join(',')
     if (cache[key] !== undefined) return cache[key]
 
     let n = 0
-    if ('#?'.includes(springs[0])) {
-      n += find(springs.slice(1), damaged, groupCount + 1)
+    if (springs[0] !== '.') {
+      n += find(springs.slice(1), damaged, matchCount + 1)
     }
-    if ('.?'.includes(springs[0]) && (damaged[0] === groupCount || groupCount === 0)) {
-      n += find(springs.slice(1), groupCount > 0 ? damaged.slice(1) : damaged, 0)
+    if (springs[0] !== '#' && (damaged[0] === matchCount || matchCount === 0)) {
+      n += find(springs.slice(1), matchCount > 0 ? damaged.slice(1) : damaged, 0)
     }
     cache[key] = n
     return n
@@ -44,5 +44,3 @@ const findArrangements = (row: Row): number => {
 // }
 
 console.log('sum of arrangements: ', sum(rows.map(findArrangements)))
-
-// console.log(Object.keys(cache).length)

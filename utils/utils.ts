@@ -8,6 +8,6 @@ export const groupBy = <T>(list: T[], getKey: (item: T) => string): Record<strin
 export const readLines = (path: string) => readFileSync(path, 'utf-8').split('\n')
 
 /**
- * @deprecate danger, will remove empty lines inside the file, use readLines instes
+ * @deprecate danger, will remove empty lines inside the file, use readLines instead
  */
 export const parseLines = (input: string) => input.split('\n').filter(Boolean)
