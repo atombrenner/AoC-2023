@@ -1,26 +1,21 @@
 import { readFileSync } from 'fs'
 
-// - find a way with minimal heat loss
-// - number of visited tiles is not an explicit constraint, but minimizing
-//   numbers of visited tiles would also impact the heat loss
-// - heatloss = sum of heatloss of all visited tiles
-// - after each step we have three possibilities
-//   - forward, left, right
-//   - can't move outside
-// - maybe we can stop exploring a path, if it is much worse than anohter, maybe farther away an higher heat loss
-// - bruteforcing seems impossible, but maybe if we detect cycles, like paths already explored
+// - find a path with minimal heat loss
 
-const lines = readFileSync('day17/input.txt', 'utf-8').split('\n')
-const grid: number[][] = lines.map((line) => line.split('').map(Number))
-const height = grid.length
-const width = grid[0].length
-console.log(width * height * 12)
+const lines = readFileSync('day17/example.txt', 'utf-8').split('\n')
+const heatmap: number[][] = lines.map((line) => line.split('').map(Number))
+const height = heatmap.length
+const width = heatmap[0].length
+const maxMomentum = 3
 
-type Tile = { x: number; y: number; momentum: number; dir: 'up' | 'right' | 'down' | 'left' }
+// TileAddress could be just a number for fast array lookup, without the need to generate string keys
+// y * width * maxMomentum * 4 + x * maxMomentum * 4 + momentum + dir (0,1,2,3)
+// tileaddr optimization would speedup the process by only 1s, no more time is spent in this code path
+type TileAddr = { x: number; y: number; momentum: number; dir: 'up' | 'right' | 'down' | 'left' }
 
 // have a list of tiles with heatloss and previous tile
-type TileInfo = {
-  tile: Tile
+type Tile = {
+  addr: TileAddr
   previous?: Tile
   heatloss: number
   visited: boolean
@@ -32,95 +27,97 @@ type TileInfo = {
 // with the additional steps info it could be that an array of tiles gets to large,
 // like width * height * 3 * 4  which would be actualy ok  as it grows only by a factor of 7
 // I believe some tiles are never visited => not true, only a minimal number (2) is not visited in normal case
+// The number of unvisited tiles is roughly constant and much smaller than then all tiles
+// the tile with the smallest heatloss will always be removed
+// => list of unvisited tiles with heatloss < Infinity (= touched)
+// => list is always sorted (either binary search for optimal insert or just sort the array)
+// => smallest heat loss is last, so we can efficiently pop() the last element
+// => finding an element for updating can be done by the gobal tiles map (same instance, but two indices)
 
-const tiles = new Map<string, TileInfo>()
-const getTileKey = (tile: Tile) => [tile.x, tile.y, tile.dir, tile.momentum].join(',')
-const getTileInfo = (tile: Tile) => {
-  const key = getTileKey(tile)
+const tiles = new Map<string, Tile>()
+const getTileKey = (addr: TileAddr) => [addr.x, addr.y, addr.dir, addr.momentum].join(',')
+const getTileInfo = (addr: TileAddr) => {
+  const key = getTileKey(addr)
   let info = tiles.get(key)
   if (!info) {
-    info = { tile, heatloss: Infinity, visited: false }
+    info = { addr, heatloss: Infinity, visited: false }
     tiles.set(key, info)
-    if (tiles.size % 1000 === 0) console.log('size', tiles.size)
   }
   return info
 }
 
-function findUnvisitedTileWithSmallestHeatloss() {
-  let heatloss = Infinity
-  let smallestTile: TileInfo | undefined = undefined
-  for (const info of tiles.values()) {
-    if (!info.visited && info.heatloss < heatloss) {
-      heatloss = info.heatloss
-      smallestTile = info
-    }
-  }
-  return smallestTile
-}
+const smallestUnvisited: Tile[] = []
 
-// neighbour detection must include rules
-// tile must include information about how many steps were done in this direction
-// maybe {x, y, steps: 'e'|'ee'|'eee'}
-
-const newTile = (
+const newTileAddr = (
   x: number,
   y: number,
-  dir: Tile['dir'],
-  oldDir: Tile['dir'],
+  dir: TileAddr['dir'],
+  oldDir: TileAddr['dir'],
   momentum: number,
 ) => ({ x, y, momentum: dir === oldDir ? momentum + 1 : 1, dir })
 
-function* getNeighbours({ x, y, momentum, dir }: Tile) {
-  if (x > 0 && dir !== 'right' && !(dir === 'left' && momentum === 3))
-    yield newTile(x - 1, y, 'left', dir, momentum)
+function* getNeighbours({ x, y, momentum, dir }: TileAddr) {
+  if (x > 0 && dir !== 'right' && !(dir === 'left' && momentum === maxMomentum))
+    yield newTileAddr(x - 1, y, 'left', dir, momentum)
 
-  if (x < width - 1 && dir !== 'left' && !(dir === 'right' && momentum === 3))
-    yield newTile(x + 1, y, 'right', dir, momentum)
+  if (x < width - 1 && dir !== 'left' && !(dir === 'right' && momentum === maxMomentum))
+    yield newTileAddr(x + 1, y, 'right', dir, momentum)
 
-  if (y > 0 && dir !== 'down' && !(dir === 'up' && momentum === 3))
-    yield newTile(x, y - 1, 'up', dir, momentum)
+  if (y > 0 && dir !== 'down' && !(dir === 'up' && momentum === maxMomentum))
+    yield newTileAddr(x, y - 1, 'up', dir, momentum)
 
-  if (y < height - 1 && dir !== 'up' && !(dir === 'down' && momentum === 3))
-    yield newTile(x, y + 1, 'down', dir, momentum)
+  if (y < height - 1 && dir !== 'up' && !(dir === 'down' && momentum === maxMomentum))
+    yield newTileAddr(x, y + 1, 'down', dir, momentum)
 }
 
-//tiles[0][0].heatloss = 0
-let current = getTileInfo({ x: 0, y: 0, dir: 'right' as const, momentum: 0 })
-current.heatloss = 0
-const stopX = width - 1
-const stopY = height - 1
+function findPath() {
+  const stopX = width - 1
+  const stopY = height - 1
 
-while (true) {
-  for (const tile of getNeighbours(current.tile)) {
-    const neighbour = getTileInfo(tile)
-    if (neighbour.visited) continue
-    const heatloss = current.heatloss + grid[tile.y][tile.x]
-    if (heatloss < neighbour.heatloss) {
-      neighbour.heatloss = heatloss
-      neighbour.previous = current.tile
+  const start = getTileInfo({ x: 0, y: 0, dir: 'right' as const, momentum: 0 })
+  start.heatloss = 0
+  smallestUnvisited.push(start)
+
+  while (true) {
+    smallestUnvisited.sort((a, b) => b.heatloss - a.heatloss)
+    const current = smallestUnvisited.pop()
+    if (!current) return
+    current.visited = true
+    if (current.addr.x === stopX && current.addr.y === stopY) return current
+
+    if (tiles.size % 1000 === 0) {
+      console.log(tiles.size) // primitive progress logging
+    }
+
+    for (const addr of getNeighbours(current.addr)) {
+      const neighbour = getTileInfo(addr)
+      if (neighbour.visited) continue
+
+      const heatloss = current.heatloss + heatmap[addr.y][addr.x]
+      if (heatloss < neighbour.heatloss) {
+        if (neighbour.heatloss === Infinity) {
+          // move to list of potential next tiles
+          smallestUnvisited.push(neighbour)
+        }
+        neighbour.heatloss = heatloss
+        neighbour.previous = current
+      }
     }
   }
-  current.visited = true
-  // console.log(current)
-  if (current.tile.x === stopX && current.tile.y === stopY) break
-  const next = findUnvisitedTileWithSmallestHeatloss()
-  if (!next) break
-  current = next
 }
 
-function backtracePath(tile: Tile) {
-  const path: Tile[] = [tile]
-  while (true) {
-    grid[tile.y][tile.x] = 0
-    const { previous } = getTileInfo(tile)
-    if (!previous) break
-    path.push(previous)
-    tile = previous
+function backtracePath(endTile: Readonly<Tile> | undefined) {
+  let tile = endTile
+  while (tile) {
+    heatmap[tile.addr.y][tile.addr.x] = 0
+    tile = tile.previous
   }
-  return path
 }
 
-backtracePath(current.tile)
-grid.forEach((row) => console.log(row.join('')))
+const found = findPath()
+if (!found) throw new Error('no path found')
 
-console.log('minimum heatloss', current.heatloss)
+backtracePath(found)
+heatmap.forEach((row) => console.log(row.join('')))
+
+console.log('minimum heatloss', found.heatloss)
