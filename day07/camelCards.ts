@@ -1,6 +1,6 @@
 import { parseLines } from '../utils/utils'
 
-const cardValues = Object.entries({
+export const cardValues = Object.entries({
   A: 'E',
   K: 'D',
   Q: 'C',
