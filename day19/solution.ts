@@ -1,11 +1,10 @@
-export type Part = {
-  x: number
-  m: number
-  a: number
-  s: number
-}
+import { sum } from '../utils/utils'
 
-export type Category = keyof Part
+export type Category = 'x' | 'm' | 'a' | 's'
+
+export type Part = Record<Category, number>
+
+export type PartRange = Record<Category, readonly [number, number]>
 
 export type Result = 'A' | 'R'
 
@@ -18,8 +17,6 @@ export type Rule = {
   condition?: Condition
   result: Result | Workflow['name']
 }
-
-//export type Condition = (part: Part) => boolean
 
 export type Condition = {
   category: Category
@@ -88,4 +85,56 @@ export function evaluate(workflows: Record<string, Workflow>, name: string, part
     if (result in workflows) return evaluate(workflows, result, part)
   }
   throw Error('illegal workflow')
+}
+
+export function findAcceptablePartRanges(workflows: Readonly<Record<string, Workflow>>) {
+  const accepted: PartRange[] = []
+
+  const evaluate = (part: PartRange, workflowOrResult: Workflow['name'] | Result) => {
+    if (workflowOrResult === 'R') return
+    if (workflowOrResult === 'A') {
+      accepted.push(part)
+      return
+    }
+    const workflow = workflows[workflowOrResult]
+    for (const { condition, result } of workflow.rules) {
+      if (condition) {
+        const { category, operator, value } = condition
+        const [min, max] = part[category]
+        if (operator === '<') {
+          // no split, apply workflow, and break
+          if (max < value) {
+            evaluate(part, result)
+            break
+          }
+          // split, apply workflow and modify existing part to continue with next rule
+          if (min < value) {
+            evaluate({ ...part, [category]: [min, value - 1] }, result)
+            part[category] = [value, max]
+          }
+        } else if (operator === '>') {
+          if (min > value) {
+            evaluate(part, result)
+            break
+          }
+          if (max > value + 1) {
+            evaluate({ ...part, [category]: [value + 1, max] }, result)
+            part[category] = [min, value]
+          }
+        }
+      } else evaluate(part, result)
+    }
+  }
+  evaluate({ x: [1, 4000], m: [1, 4000], a: [1, 4000], s: [1, 4000] }, 'in')
+  return accepted
+}
+
+export function calculateCombinations(parts: PartRange[]) {
+  return sum(
+    parts.map((part) =>
+      Object.values(part)
+        .map(([min, max]) => max - min + 1)
+        .reduce((a, c) => a * c),
+    ),
+  )
 }

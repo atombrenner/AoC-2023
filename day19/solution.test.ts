@@ -1,5 +1,5 @@
 import { describe, it, test, expect } from 'bun:test'
-import { evaluate, parseInput } from './solution'
+import { evaluate, parseInput, split } from './solution'
 import { readFileSync } from 'fs'
 
 const { workflows, parts } = parseInput(readFileSync('day19/example.txt', 'utf-8'))
